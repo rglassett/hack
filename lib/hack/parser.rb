@@ -44,7 +44,7 @@ module Hack
     end
 
     def sanitize_command(line)
-      line.strip.gsub(COMMENT, '')
+      line.gsub(COMMENT, '').strip
     end
 
     def set_command_type!
