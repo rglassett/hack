@@ -5,18 +5,18 @@ module Hack
     OPERAND = /[ADM01]/
     OPERATOR = /[\!\+\-\&\|]/
 
-    DEST = /(?<dest>[ADM]{1,3})=/
-    JUMP = /;(?<jump>J(GT|EQ|GE|LT|NE|LE|MP))/
-    COMP = /(#{OPERAND}){0,1}(#{OPERATOR}{0,1})(#{OPERAND}){1}/
+    DEST = /((?<dest>[ADM]{1,3})=){0,1}/
+    JUMP = /(;(?<jump>J(GT|EQ|GE|LT|NE|LE|MP))){0,1}/
+    COMP = /(?<comp>(#{OPERAND}){0,1}(#{OPERATOR}{0,1})(#{OPERAND}){1})/
 
     IDENTIFIER = /[A-Za-z]\w+/
     INTEGER = /\d+/
-    SYMBOL = /(#{IDENTIFIER}|#{INTEGER})/
+    SYMBOL = /(?<symbol>#{IDENTIFIER}|#{INTEGER})/
 
     COMMAND_TYPES = [
-      [:a, /@(?<symbol>#{SYMBOL})/],
-      [:c, /(#{DEST}){0,1}(?<comp>#{COMP})(#{JUMP}){0,1}/],
-      [:l, /\((?<symbol>#{SYMBOL})\)/],
+      [:a, /@#{SYMBOL}/],
+      [:c, /#{DEST}#{COMP}#{JUMP}/],
+      [:l, /\(#{SYMBOL}\)/],
     ]
 
     attr_reader :io_device, :command, :command_type, :command_data
