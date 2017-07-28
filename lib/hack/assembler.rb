@@ -24,15 +24,40 @@ module Hack
       end
     end
 
-    attr_reader :input, :output, :parser
+    attr_reader :input, :output, :parser, :symbol_table
 
     def initialize(input, output)
       @input = input
       @output = output
       @parser = Parser.new(input)
+      @symbol_table = SymbolTable.new
     end
 
     def assemble
+      first_pass
+      parser.rewind
+      second_pass
+    end
+
+    def first_pass
+      instruction_number = 0
+
+      while parser.more_commands?
+        parser.advance
+        case parser.command_type
+        when :a
+          instruction_number += 1
+        when :c
+          instruction_number += 1
+        when :l
+          symbol_table[parser.symbol] = instruction_number
+        else
+          raise "Unknown command type: #{parser.command_type}"
+        end
+      end
+    end
+
+    def second_pass
       while parser.more_commands?
         parser.advance
         case parser.command_type
@@ -41,7 +66,7 @@ module Hack
         when :c
           c_instruction
         when :l
-          l_instruction
+          # no-op
         else
           raise "Unknown command type: #{parser.command_type}"
         end
@@ -49,7 +74,7 @@ module Hack
     end
 
     def a_instruction
-      output.puts("0" + Integer(parser.symbol).to_s(2).rjust(15, '0'))
+      output.puts(symbol_to_address(parser.symbol))
     end
 
     def c_instruction
@@ -61,8 +86,15 @@ module Hack
       )
     end
 
-    def l_instruction
-      raise NotImplementedError
+    def symbol_to_address(symbol)
+      format_address(Integer(symbol))
+    rescue ArgumentError
+      symbol_table.allocate_variable(symbol) unless symbol_table.key?(symbol)
+      format_address(symbol_table[symbol])
+    end
+
+    def format_address(integer)
+      "0" + integer.to_s(2).rjust(15, '0')
     end
   end
 end

@@ -9,20 +9,24 @@ module Hack
     JUMP = /(;(?<jump>J(GT|EQ|GE|LT|NE|LE|MP))){0,1}/
     COMP = /(?<comp>(#{OPERAND}){0,1}(#{OPERATOR}{0,1})(#{OPERAND}){1})/
 
-    IDENTIFIER = /[A-Za-z]\w+/
+    IDENTIFIER = /[A-Za-z\.\$\:][\w\.\$\:]+/
     INTEGER = /\d+/
     SYMBOL = /(?<symbol>#{IDENTIFIER}|#{INTEGER})/
 
     COMMAND_TYPES = [
-      [:a, /@#{SYMBOL}/],
-      [:c, /#{DEST}#{COMP}#{JUMP}/],
-      [:l, /\(#{SYMBOL}\)/],
+      [:a, /\A@#{SYMBOL}\z/],
+      [:c, /\A#{DEST}#{COMP}#{JUMP}\z/],
+      [:l, /\A\(#{SYMBOL}\)\z/],
     ]
 
     attr_reader :io_device, :command, :command_type, :command_data
 
     def initialize(io_device)
       @io_device = io_device
+    end
+
+    def rewind
+      io_device.rewind
     end
 
     def more_commands?
