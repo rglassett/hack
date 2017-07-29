@@ -31,6 +31,28 @@ module Hack
       'D|M' => '1010101'
     }
 
+    def self.to_hack(instruction, symbol_table)
+      case instruction
+      when AInstruction
+        a_instruction(instruction, symbol_table)
+      when CInstruction
+        c_instruction(instruction, symbol_table)
+      else
+        raise "Unhandled instruction: #{instruction.inspect}"
+      end
+    end
+
+    def self.a_instruction(instruction, symbol_table)
+      "0" + address(instruction.symbol, symbol_table).to_s(2).rjust(15, '0')
+    end
+
+    def self.c_instruction(instruction, _symbol_table)
+      '111' +
+        comp(instruction.comp) +
+        dest(instruction.dest) +
+        jump(instruction.jump)
+    end
+
     def self.dest(mnemonic)
       dest = '000'
       dest[0] = '1' if mnemonic =~ /A/
@@ -51,6 +73,14 @@ module Hack
       jump[1] = '1' if mnemonic =~ /J(EQ|GE|LE|MP)/
       jump[2] = '1' if mnemonic =~ /J(GT|GE|NE|MP)/
       jump
+    end
+
+    private
+
+    def self.address(symbol, symbol_table)
+      Integer(symbol)
+    rescue ArgumentError
+      symbol_table[symbol]
     end
   end
 end

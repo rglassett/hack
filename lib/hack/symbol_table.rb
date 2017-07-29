@@ -1,5 +1,7 @@
 module Hack
   class SymbolTable
+    PRIMITIVES = Set.new(['A', 'D', 'M'])
+
     PRESETS = {
       'SP'     => 0,
       'LCL'    => 1,
@@ -33,13 +35,13 @@ module Hack
       @next_address = 16
     end
 
-    def allocate_variable(symbol)
-      check_overflow_status!
-      self[symbol] = next_address
-      @next_address += 1
+    def [](symbol)
+      allocate_variable!(symbol) unless key?(symbol)
+      @table[symbol]
     end
 
     def []=(symbol, address)
+      validate_symbol!(symbol)
       @table[symbol] = address
     end
 
@@ -47,15 +49,25 @@ module Hack
       @table.key?(symbol)
     end
 
-    def [](symbol)
-      @table[symbol]
-    end
-
     private
 
-    def check_overflow_status!
-      if next_address > PRESETS['SCREEN']
+    def allocate_variable!(symbol)
+      validate_address!(next_address)
+      self[symbol] = next_address
+      @next_address += 1
+    end
+
+    def validate_address!(address)
+      if address >= PRESETS['SCREEN']
         raise "Symbol table overflow: no memory left to allocate"
+      end
+    end
+
+    def validate_symbol!(symbol)
+      if key?(symbol)
+        raise "Variable or label already allocated: #{symbol}"
+      elsif PRIMITIVES.include?(symbol)
+        raise "Symbol conflicts with primitive name: #{symbol}"
       end
     end
   end

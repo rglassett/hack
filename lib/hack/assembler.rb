@@ -35,66 +35,37 @@ module Hack
 
     def assemble
       first_pass
-      parser.rewind
       second_pass
     end
 
     def first_pass
       instruction_number = 0
 
-      while parser.more_commands?
-        parser.advance
-        case parser.command_type
-        when :a
+      parser.each_instruction do |instruction|
+        case instruction
+        when AInstruction
           instruction_number += 1
-        when :c
+        when CInstruction
           instruction_number += 1
-        when :l
-          symbol_table[parser.symbol] = instruction_number
+        when LInstruction
+          symbol_table[instruction.symbol] = instruction_number
         else
-          raise "Unknown command type: #{parser.command_type}"
+          raise "Unknown instruction type: #{instruction.class.name}"
         end
       end
     end
 
     def second_pass
-      while parser.more_commands?
-        parser.advance
-        case parser.command_type
-        when :a
-          a_instruction
-        when :c
-          c_instruction
-        when :l
+      parser.each_instruction do |instruction|
+        case instruction
+        when AInstruction, CInstruction
+          output.puts(CodeGenerator.to_hack(instruction, symbol_table))
+        when LInstruction
           # no-op
         else
-          raise "Unknown command type: #{parser.command_type}"
+          raise "Unknown instruction type: #{instruction.class.name}"
         end
       end
-    end
-
-    def a_instruction
-      output.puts(symbol_to_address(parser.symbol))
-    end
-
-    def c_instruction
-      output.puts(
-        "111" +
-        CodeGenerator.comp(parser.comp) +
-        CodeGenerator.dest(parser.dest) +
-        CodeGenerator.jump(parser.jump)
-      )
-    end
-
-    def symbol_to_address(symbol)
-      format_address(Integer(symbol))
-    rescue ArgumentError
-      symbol_table.allocate_variable(symbol) unless symbol_table.key?(symbol)
-      format_address(symbol_table[symbol])
-    end
-
-    def format_address(integer)
-      "0" + integer.to_s(2).rjust(15, '0')
     end
   end
 end
