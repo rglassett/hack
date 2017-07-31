@@ -1,8 +1,8 @@
 require 'rspec'
 require 'tempfile'
-require_relative '../../lib/hack'
+require_relative '../../../../lib/hack/assembly'
 
-describe Hack::Assembler do
+describe Hack::Assembly::Assembler do
   context 'given Hack assembly code with no variables or labels' do
     it 'correctly generates the Add program' do
       compare('Add')
@@ -38,7 +38,7 @@ describe Hack::Assembler do
   def compare(program)
     File.open("spec/fixtures/#{program}.asm") do |input|
       Tempfile.open('assembler_spec', '/tmp') do |output|
-        Hack::Assembler.new(input, output).assemble
+        Hack::Assembly::Assembler.new(input, output).assemble
         [input, output].each(&:rewind)
 
         File.open("spec/fixtures/#{program}.hack") do |compare_file|
