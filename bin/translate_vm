@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+
+require 'tempfile'
+require 'pathname'
+require 'fileutils'
+
+require_relative '../lib/hack/virtual_machine'
+
+def with_tempfile(input_filename)
+  input_pathname = Pathname.new(input_filename)
+  basename = input_pathname.basename('.vm')
+  output_filename = input_pathname.dirname.join("#{basename}.asm")
+
+  Tempfile.open('hack_assembler', '/tmp') do |output|
+    yield output
+    FileUtils.mv(output.path, output_filename)
+    ObjectSpace.undefine_finalizer(output)
+  end
+end
+
+input_filename = ARGV[0]
+
+File.open(input_filename) do |input|
+  with_tempfile(input_filename) do |output|
+    code_generator = Hack::VirtualMachine::CodeGenerator.new
+    Hack::VirtualMachine::Parser.new(input).each_instruction do |instruction|
+      output.puts code_generator.generate(instruction)
+    end
+  end
+end
