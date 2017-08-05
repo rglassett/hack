@@ -4,7 +4,7 @@ require 'tempfile'
 require 'pathname'
 require 'fileutils'
 
-require_relative '../lib/hack/virtual_machine'
+require_relative '../lib/hack'
 
 def with_tempfile(input_filename)
   input_pathname = Pathname.new(input_filename)
@@ -22,9 +22,11 @@ input_filename = ARGV[0]
 
 File.open(input_filename) do |input|
   with_tempfile(input_filename) do |output|
-    code_generator = Hack::VirtualMachine::CodeGenerator.new
+    progname = Pathname.new(input_filename).basename('.vm').to_s
+    code_generator = Hack::VirtualMachine::CodeGenerator.new(progname)
     Hack::VirtualMachine::Parser.new(input).each_instruction do |instruction|
       output.puts code_generator.generate(instruction)
     end
+    output.puts code_generator.finalize
   end
 end

@@ -1,81 +1,128 @@
 module Hack
   module VirtualMachine
     class CodeGenerator
-      def generate(raw_instruction)
-        instruction = Instruction.parse(raw_instruction)
+      attr_reader :label_count, :memory
 
-        "// #{raw_instruction}\n" + case instruction
-        when Arithmetic
-          write_arithmetic(instruction)
-        when Push, Pop
-          write_push_pop(instruction)
-        end
+      def initialize(progname, label_count=0)
+        @label_count = label_count
+        @memory = Hack::VirtualMachine::Ram.new(progname)
+      end
+
+      def generate(instruction)
+        instruction_type = instruction.class.name.split('::').last.downcase
+        public_send("write_#{instruction_type}", instruction)
+      end
+
+      def finalize
+        <<-ASM.strip_heredoc
+          (VM.End)
+          @VM.End
+          0;JMP
+        ASM
       end
 
       def write_arithmetic(instruction)
-        case instruction.command
-        when 'add'
-          write_add(instruction)
-        end
+        public_send("write_#{instruction.command}")
       end
 
-      def address(segment, index)
-        if segment == 'constant'
-          strip_heredoc(<<-ASM)
-            @#{index}
-          ASM
-        elsif segment == 'temp'
-          strip_heredoc(<<-ASM)
-            @R#{5 + Integer(index)} // hack
-          ASM
-        end
+      def write_add
+        binary_operation('M=D+M')
       end
 
-      def write_add(instruction)
-        add_logic = strip_heredoc(<<-ASM)
-          @R5
-          D=M
-          @R6
-          M=D+M
-        ASM
-
-        generate('pop temp 0') +
-          generate('pop temp 1') +
-          add_logic +
-          generate('push temp 1')
+      def write_sub
+        binary_operation('M=M-D')
       end
 
-      def write_push_pop(instruction)
-        case instruction
-        when Push
-          write_push(instruction)
-        when Pop
-          write_pop(instruction)
-        end
+      def write_and
+        binary_operation('M=D&M')
+      end
+
+      def write_or
+        binary_operation('M=D|M')
+      end
+
+      def write_neg
+        unary_operation('M=-M')
+      end
+
+      def write_not
+        unary_operation('M=!M')
+      end
+
+      def write_eq
+        comparison_operation('JEQ')
+      end
+
+      def write_gt
+        comparison_operation('JGT')
+      end
+
+      def write_lt
+        comparison_operation('JLT')
       end
 
       def write_push(instruction)
-        if instruction.segment == 'constant'
-          write_push_constant(instruction)
-        else
-          write_push_value(instruction)
-        end
+        memory.read_from(instruction.segment, instruction.index) + push_from_d
       end
 
-      def write_push_value(instruction)
-        address(instruction.segment, instruction.index) +
-          "D=M\n" +
-          write_push_from_d
+      def write_pop(instruction)
+        pop_to_d + memory.write_to(instruction.segment, instruction.index)
       end
 
-      def write_push_constant(instruction)
-        address(instruction.segment, instruction.index) +
-          "D=A\n" +
-          write_push_from_d
+      def binary_operation(operation)
+        <<-ASM
+          @SP
+          A=M-1
+          D=M
+          M=0
+          A=A-1
+          #{operation}
+          @SP
+          M=M-1
+        ASM
       end
 
-      def write_push_from_d
-        strip_heredoc(<<-ASM)
+      def unary_operation(operation)
+        <<-ASM.strip_heredoc
+          @SP
+          A=M-1
+          #{operation}
+        ASM
+      end
+
+      def comparison_operation(jump_mnemonic)
+        @label_count += 1
+
+        <<-ASM.strip_heredoc
+          @SP
+          A=M-1
+          D=M
+          M=0
+          A=A-1
+          D=M-D
+          @SP
+          M=M-1
+          @VM.CompTrue.#{label_count}
+          D;#{jump_mnemonic}
+
+          D=0
+          @VM.CompAssign.#{label_count}
+          0;JMP
+
+          (VM.CompTrue.#{label_count})
+          D=-1
+          @VM.CompAssign.#{label_count}
+          0;JMP
+
+          (VM.CompAssign.#{label_count})
+          @SP
+          A=M-1
+          M=D
+        ASM
+      end
+
+      def push_from_d
+        <<-ASM.strip_heredoc
           @SP
           A=M
           M=D
@@ -84,42 +131,15 @@ module Hack
         ASM
       end
 
-      def write_pop(instruction)
-        write_to_current_address = strip_heredoc(<<-ASM)
-          // save current address in temp 2 (R7)
-          D=A
-          @R7
-          M=D
-
-          // address the top element in the stack (SP - 1)
+      def pop_to_d
+        <<-ASM.strip_heredoc
           @SP
           A=M-1
-          // save the element to D
           D=M
-          // remove the element from the stack
           M=0
-          // decrement the stack pointer
           @SP
           M=M-1
-
-          // address the pop destination
-          @R7
-          A=M
-          // write the popped element
-          M=D
-          // clear R7
-          @R7
-          M=0
         ASM
-
-        address(instruction.segment, instruction.index) +
-          write_to_current_address
-      end
-
-      def strip_heredoc(heredoc)
-        leading_indents = heredoc.scan(/^[ \t]*(?=\S)/)
-        indent_level = leading_indents.any? ? leading_indents.min.size : 0
-        heredoc.gsub(/^[ \t]{#{indent_level}}/, '')
       end
     end
   end

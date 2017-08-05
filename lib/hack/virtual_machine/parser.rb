@@ -25,8 +25,7 @@ module Hack
           raw_instruction = Instruction.sanitize(io_device.readline)
         end
 
-        @instruction = Instruction.sanitize(raw_instruction)
-        # @instruction = Instruction.parse(raw_instruction)
+        @instruction = Instruction.parse(raw_instruction)
       end
     end
   end

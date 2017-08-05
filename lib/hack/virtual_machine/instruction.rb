@@ -6,7 +6,7 @@ module Hack
       INTEGER = /\d+/
       SYMBOL = /(?<symbol>#{IDENTIFIER}|#{INTEGER})/
 
-      SEGMENT = /(?<segment>argument|local|this|that|pointer|temp|constant)/
+      SEGMENT = /(?<segment>argument|local|this|that|pointer|temp|constant|static)/
       INDEX = /(?<index>#{INTEGER})/
       MEMORY_ADDRESS = /#{SEGMENT}\s*#{INDEX}/
 
