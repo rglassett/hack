@@ -14,7 +14,7 @@ module Hack
       end
 
       def finalize
-        <<-ASM.strip_heredoc
+        <<~ASM
           (VM.End)
           @VM.End
           0;JMP
@@ -70,7 +70,7 @@ module Hack
       end
 
       def binary_operation(operation)
-        <<-ASM
+        <<~ASM
           @SP
           A=M-1
           D=M
@@ -83,7 +83,7 @@ module Hack
       end
 
       def unary_operation(operation)
-        <<-ASM.strip_heredoc
+        <<~ASM
           @SP
           A=M-1
           #{operation}
@@ -93,7 +93,7 @@ module Hack
       def comparison_operation(jump_mnemonic)
         @label_count += 1
 
-        <<-ASM.strip_heredoc
+        <<~ASM
           @SP
           A=M-1
           D=M
@@ -122,7 +122,7 @@ module Hack
       end
 
       def push_from_d
-        <<-ASM.strip_heredoc
+        <<~ASM
           @SP
           A=M
           M=D
@@ -132,7 +132,7 @@ module Hack
       end
 
       def pop_to_d
-        <<-ASM.strip_heredoc
+        <<~ASM
           @SP
           A=M-1
           D=M

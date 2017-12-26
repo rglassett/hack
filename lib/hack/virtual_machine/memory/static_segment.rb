@@ -14,14 +14,14 @@ module Hack
         end
 
         def read_from(index)
-          <<-ASM.strip_heredoc
+          <<~ASM
             @Prg.#{progname}.#{index}
             D=M
           ASM
         end
 
         def write_to(index)
-          <<-ASM.strip_heredoc
+          <<~ASM
             @Prg.#{progname}.#{index}
             M=D
           ASM

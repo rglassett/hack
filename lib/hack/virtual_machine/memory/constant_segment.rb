@@ -3,7 +3,7 @@ module Hack
     module Memory
       class ConstantSegment
         def read_from(index)
-          <<-ASM.strip_heredoc
+          <<~ASM
             @#{index}
             D=A
           ASM

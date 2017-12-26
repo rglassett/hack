@@ -11,7 +11,7 @@ module Hack
         def read_from(index)
           validate!(index)
 
-          <<-ASM.strip_heredoc
+          <<~ASM
           @R#{base + Integer(index)}
           D=M
           ASM
@@ -20,7 +20,7 @@ module Hack
         def write_to(index)
           validate!(index)
 
-          <<-ASM.strip_heredoc
+          <<~ASM
           @R#{base + Integer(index)}
           M=D
           ASM

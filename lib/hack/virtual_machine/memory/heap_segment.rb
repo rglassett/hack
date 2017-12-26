@@ -9,7 +9,7 @@ module Hack
         end
 
         def read_from(index)
-          <<-ASM.strip_heredoc
+          <<~ASM
             @#{base}
             D=M
             @#{index}
@@ -19,7 +19,7 @@ module Hack
         end
 
         def write_to(index)
-          <<-ASM.strip_heredoc
+          <<~ASM
             @R13
             M=D
             @#{base}
